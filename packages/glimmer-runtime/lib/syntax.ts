@@ -90,6 +90,10 @@ export abstract class Expression<T> {
   abstract compile(compiler: SymbolLookup, env: Environment): CompiledExpression<T>;
 }
 
+export interface ExpressionCompiler {
+  expression(parts: InternedString[]): CompiledExpression<any>
+}
+
 export interface SymbolLookup {
   getLocalSymbol(name: InternedString): number;
   hasLocalSymbol(name: InternedString): boolean;

@@ -1,4 +1,4 @@
-import { FIXME, Opaque, Slice, LinkedList, InternedString } from 'glimmer-util';
+import { FIXME, Opaque, Slice, LinkedList, InternedString, intern } from 'glimmer-util';
 import { OpSeq, Opcode } from './opcodes';
 import {
   OpenPrimitiveElementOpcode,
@@ -40,13 +40,18 @@ import OpcodeBuilder, {
 import {
   Statement as StatementSyntax,
   Attribute as AttributeSyntax,
-  StatementCompilationBuffer
+  StatementCompilationBuffer,
+  Expression as ExpressionSyntax
 } from './syntax';
 
 import {
   FunctionExpression,
   default as makeFunctionExpression
 } from './compiled/expressions/function';
+
+import {
+  CompiledExpression
+} from './compiled/expressions';
 
 import * as Component from './component/interfaces';
 import { CACHED_LAYOUT } from './component/interfaces';
@@ -66,10 +71,6 @@ abstract class Compiler {
 
   protected compileStatement(statement: StatementSyntax, ops: StatementCompilationBuffer) {
     this.env.statement(statement).compile(ops, this.env);
-  }
-
-  protected compileExpression(expression) {
-    this.env.expression(expression).compile();
   }
 }
 
@@ -392,6 +393,15 @@ class ComponentBuilder {
   }
 }
 
+export interface ParsedExpression {
+  type: InternedString;
+  head: InternedString;
+  path: InternedString[];
+  symbol: any;
+  parts: InternedString[];
+}
+
+
 export class CompileIntoList extends LinkedList<Opcode> implements OpcodeBuilder, StatementCompilationBuffer {
   private env: Environment;
   private symbolTable: SymbolTable;
@@ -404,6 +414,29 @@ export class CompileIntoList extends LinkedList<Opcode> implements OpcodeBuilder
     this.symbolTable = symbolTable;
 
     this.component = new ComponentBuilder(this, env);
+  }
+
+  private parseExpression(parts: InternedString[]): ParsedExpression {
+    let type: InternedString = intern('self');
+    let [ head ] = parts;
+    let path = parts.slice(0);
+    let symbol;
+
+    if (this.hasKeyword(head)) {
+      type = intern('keyword');
+    } if (this.hasLocalSymbol(head)) {
+      type = intern('local');
+      symbol = this.getLocalSymbol(head);
+    } if (this.hasNamedSymbol(head)) {
+      type = intern('named');
+      symbol = this.getNamedSymbol(head);
+    }
+
+    return { type, symbol, head, path, parts };
+  }
+
+  expression(parts: InternedString[]): CompiledExpression<Opaque> {
+    return this.env.expression(this.parseExpression(parts));
   }
 
   getLocalSymbol(name: InternedString): number {

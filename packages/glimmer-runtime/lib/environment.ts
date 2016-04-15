@@ -2,6 +2,10 @@ import {
   Statement as StatementSyntax,
   Expression as ExpressionSyntax } from './syntax';
 
+import {
+  ParsedExpression,
+} from './compiler';
+
 import { DOMHelper } from './dom';
 import { Reference, OpaqueIterable } from 'glimmer-reference';
 import { NULL_REFERENCE, ConditionalReference } from './references';
@@ -35,6 +39,16 @@ import IfSyntax from './syntax/builtins/if';
 import UnlessSyntax from './syntax/builtins/unless';
 import WithSyntax from './syntax/builtins/with';
 import EachSyntax from './syntax/builtins/each';
+
+import {
+  CompiledLocalRef,
+  CompiledKeywordRef,
+  CompiledSelfRef
+} from './compiled/expressions/ref';
+
+import {
+  CompiledExpression
+} from './compiled/expressions';
 
 type ScopeSlot = PathReference<Opaque> | InlineBlock;
 
@@ -127,12 +141,23 @@ export abstract class Environment {
     return this.refineStatement(parseStatement(statement)) || statement;
   }
 
-  expression(expression: ExpressionSyntax<any>): ExpressionSyntax<any> {
-    return this.refineExpression(expression) || expression;
+  expression(parseExpression: ParsedExpression): CompiledExpression<Opaque>  {
+    return this.refineExpression(parseExpression);
   }
 
-  protected refineExpression(expression) {
-    return expression;
+  protected refineExpression(parsedExpression: ParsedExpression): CompiledExpression<Opaque> {
+    let { type, symbol, head, path, parts } = parsedExpression;
+
+    switch (type) {
+      case 'self':
+        return new CompiledSelfRef({ parts });
+      case 'local':
+        return new CompiledLocalRef({ debug: head, symbol, path });
+      case 'named':
+        return new CompiledLocalRef({ debug: head, symbol, path });
+      case 'keyword':
+        return new CompiledKeywordRef({ name: head, path });
+    }
   }
 
   protected refineStatement(statement: ParsedStatement): StatementSyntax {
@@ -235,20 +260,6 @@ export interface ParsedStatement {
   isInline: boolean;
   isBlock: boolean;
   templates: Syntax.Templates;
-}
-
-interface ParsedExpression {
-  name: string
-}
-
-function parseExpression(statement: StatementSyntax): ParsedExpression {
-  let type = statement.type;
-  let name: string;
-  let dynamicAttr = type === 'dynamic-attr' ? <Syntax.DynamicAttr>statement : null;
-  if (dynamicAttr) {
-    name = dynamicAttr.name;
-  }
-  return { name }
 }
 
 function parseStatement(statement: StatementSyntax): ParsedStatement {

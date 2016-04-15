@@ -11,7 +11,8 @@ import {
   Expression as ExpressionSyntax,
   Statement as StatementSyntax,
   PrettyPrint,
-  SymbolLookup
+  SymbolLookup,
+  ExpressionCompiler
 } from '../syntax';
 
 import {
@@ -819,13 +820,9 @@ export class GetNamedParameter<T> extends ExpressionSyntax<T> {
     return new PrettyPrint('expr', 'get-named', [this.parts.join('.')], null);
   }
 
-  compile(lookup: SymbolLookup): CompiledExpression<T> {
+  compile(compile: ExpressionCompiler): CompiledExpression<T> {
     let { parts } = this;
-    let head = parts[0];
-    let symbol = lookup.getNamedSymbol(head);
-
-    let path = parts.slice(1);
-    return new CompiledLocalRef({ debug: head, symbol, path });
+    return compile.expression(parts);
   }
 }
 
