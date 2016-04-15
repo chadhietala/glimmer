@@ -181,7 +181,7 @@ export class Unknown extends ExpressionSyntax<any> {
     this.trustingMorph = !!options.unsafe;
   }
 
-  compile(compiler: SymbolLookup, env: Environment): CompiledExpression<any> {
+  compile(compiler: ExpressionCompiler, env: Environment): CompiledExpression<any> {
     let { ref } = this;
 
     if (env.hasHelper(ref.parts)) {
@@ -791,7 +791,7 @@ export class Get extends ExpressionSyntax<Opaque> {
     return new PrettyPrint('expr', 'get', [this.ref.prettyPrint()], null);
   }
 
-  compile(compiler: SymbolLookup): CompiledExpression<Opaque> {
+  compile(compiler: ExpressionCompiler): CompiledExpression<Opaque> {
     return this.ref.compile(compiler);
   }
 }
@@ -851,9 +851,9 @@ export class Ref extends ExpressionSyntax<Opaque> {
     return this.parts.join('.');
   }
 
-  compile(compiler: ExpressionCompiler): CompiledExpression<Opaque> {
+  compile(compile: ExpressionCompiler): CompiledExpression<Opaque> {
     let { parts } = this;
-    return compiler.expression(parts);
+    return compile.expression(parts);
   }
 
   path(): InternedString[] {

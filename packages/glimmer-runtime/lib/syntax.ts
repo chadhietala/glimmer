@@ -90,7 +90,7 @@ export abstract class Expression<T> {
   abstract compile(compiler: SymbolLookup, env: Environment): CompiledExpression<T>;
 }
 
-export interface ExpressionCompiler {
+export interface ExpressionCompiler extends SymbolLookup {
   expression(parts: InternedString[]): CompiledExpression<any>
 }
 

@@ -424,10 +424,10 @@ export class CompileIntoList extends LinkedList<Opcode> implements OpcodeBuilder
 
     if (this.hasKeyword(head)) {
       type = intern('keyword');
-    } if (this.hasLocalSymbol(head)) {
+    } else if (this.hasLocalSymbol(head)) {
       type = intern('local');
       symbol = this.getLocalSymbol(head);
-    } if (this.hasNamedSymbol(head)) {
+    } else if (this.hasNamedSymbol(head)) {
       type = intern('named');
       symbol = this.getNamedSymbol(head);
     }
