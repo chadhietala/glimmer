@@ -418,8 +418,8 @@ export class CompileIntoList extends LinkedList<Opcode> implements OpcodeBuilder
 
   private parseExpression(parts: InternedString[]): ParsedExpression {
     let type: InternedString = intern('self');
-    let [ head ] = parts;
-    let path = parts.slice(0);
+    let head = parts[0];
+    let path = parts.slice(1);
     let symbol;
 
     if (this.hasKeyword(head)) {
