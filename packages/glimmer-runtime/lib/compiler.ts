@@ -67,6 +67,10 @@ abstract class Compiler {
   protected compileStatement(statement: StatementSyntax, ops: StatementCompilationBuffer) {
     this.env.statement(statement).compile(ops, this.env);
   }
+
+  protected compileExpression(expression) {
+    this.env.expression(expression).compile();
+  }
 }
 
 function compileStatement(env: Environment, statement: StatementSyntax, ops: StatementCompilationBuffer) {

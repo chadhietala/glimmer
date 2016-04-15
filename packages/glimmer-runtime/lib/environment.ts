@@ -1,4 +1,6 @@
-import { Statement as StatementSyntax } from './syntax';
+import {
+  Statement as StatementSyntax,
+  Expression as ExpressionSyntax } from './syntax';
 
 import { DOMHelper } from './dom';
 import { Reference, OpaqueIterable } from 'glimmer-reference';
@@ -125,6 +127,14 @@ export abstract class Environment {
     return this.refineStatement(parseStatement(statement)) || statement;
   }
 
+  expression(expression: ExpressionSyntax<any>): ExpressionSyntax<any> {
+    return this.refineExpression(expression) || expression;
+  }
+
+  protected refineExpression(expression) {
+    return expression;
+  }
+
   protected refineStatement(statement: ParsedStatement): StatementSyntax {
     let {
       isSimple,
@@ -227,47 +237,61 @@ export interface ParsedStatement {
   templates: Syntax.Templates;
 }
 
+interface ParsedExpression {
+  name: string
+}
+
+function parseExpression(statement: StatementSyntax): ParsedExpression {
+  let type = statement.type;
+  let name: string;
+  let dynamicAttr = type === 'dynamic-attr' ? <Syntax.DynamicAttr>statement : null;
+  if (dynamicAttr) {
+    name = dynamicAttr.name;
+  }
+  return { name }
+}
+
 function parseStatement(statement: StatementSyntax): ParsedStatement {
-    let type = statement.type;
-    let block = type === 'block' ? <Syntax.Block>statement : null;
-    let append = type === 'append' ? <Syntax.Append>statement : null;
+  let type = statement.type;
+  let block = type === 'block' ? <Syntax.Block>statement : null;
+  let append = type === 'append' ? <Syntax.Append>statement : null;
 
-    let named: Syntax.NamedArgs;
-    let args: Syntax.Args;
-    let path: InternedString[];
-    let unknown: Syntax.Unknown;
-    let helper: Syntax.Helper;
+  let named: Syntax.NamedArgs;
+  let args: Syntax.Args;
+  let path: InternedString[];
+  let unknown: Syntax.Unknown;
+  let helper: Syntax.Helper;
 
-    if (block) {
-      args = block.args;
-      named = args.named;
-      path = block.path;
-    } else if (append && append.value.type === 'unknown') {
-      unknown = <Syntax.Unknown>append.value;
-      args = Syntax.Args.empty();
-      named = Syntax.NamedArgs.empty();
-      path = unknown.ref.path();
-    } else if (append && append.value.type === 'helper') {
-      helper = <Syntax.Helper>append.value;
-      args = helper.args;
-      named = args.named;
-      path = helper.ref.path();
-    }
+  if (block) {
+    args = block.args;
+    named = args.named;
+    path = block.path;
+  } else if (append && append.value.type === 'unknown') {
+    unknown = <Syntax.Unknown>append.value;
+    args = Syntax.Args.empty();
+    named = Syntax.NamedArgs.empty();
+    path = unknown.ref.path();
+  } else if (append && append.value.type === 'helper') {
+    helper = <Syntax.Helper>append.value;
+    args = helper.args;
+    named = args.named;
+    path = helper.ref.path();
+  }
 
-    let key: InternedString, isSimple: boolean;
+  let key: InternedString, isSimple: boolean;
 
-    if (path) {
-      isSimple = path.length === 1;
-      key = path[0];
-    }
+  if (path) {
+    isSimple = path.length === 1;
+    key = path[0];
+  }
 
-    return {
-      isSimple,
-      path,
-      key,
-      args,
-      isInline: !!append,
-      isBlock: !!block,
-      templates: block && block.templates
-    };
+  return {
+    isSimple,
+    path,
+    key,
+    args,
+    isInline: !!append,
+    isBlock: !!block,
+    templates: block && block.templates
+  };
 }
