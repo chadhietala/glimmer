@@ -1,6 +1,9 @@
 import { PathReference, Tagged, Revision, RevisionTag, DirtyableTag } from 'glimmer-reference';
 import { Opaque } from 'glimmer-util';
+<<<<<<< 121d7fda38ad496e8528328555d09918f1e59ed7
 import { assign } from './helpers';
+=======
+>>>>>>> Refactors DOMHelper into append and updating operations
 
 export function skip(target: Object, name: string, descriptor: PropertyDescriptor) {
   descriptor.value['skip'] = true;
@@ -12,11 +15,19 @@ export class VersionedObject implements Tagged<Revision> {
 
   constructor(value: Object) {
     this.tag = new DirtyableTag();
+<<<<<<< 121d7fda38ad496e8528328555d09918f1e59ed7
     assign(this, value);
   }
 
   update(value: Object) {
     assign(this, value);
+=======
+    Object.assign(this, value);
+  }
+
+  update(value: Object) {
+    Object.assign(this, value);
+>>>>>>> Refactors DOMHelper into append and updating operations
     this.dirty();
   }
 
