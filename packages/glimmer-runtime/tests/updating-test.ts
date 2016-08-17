@@ -908,6 +908,7 @@ test("The with helper should consider an empty array falsy", assert => {
 });
 
 test("block helpers whose template has a morph at the edge", function() {
+  Node
   let template = compile("{{#identity}}{{value}}{{/identity}}");
   let object = { value: "hello world" };
   render(template, object);

@@ -1,8 +1,6 @@
 import { PathReference, Tagged, Revision, RevisionTag, DirtyableTag } from 'glimmer-reference';
 import { Opaque } from 'glimmer-util';
 import { assign } from './helpers';
-=======
-import { assign } from './helpers';
 
 export function skip(target: Object, name: string, descriptor: PropertyDescriptor) {
   descriptor.value['skip'] = true;

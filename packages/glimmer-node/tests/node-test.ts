@@ -2,33 +2,32 @@ import * as QUnit from 'qunitjs';
 import * as SimpleDOM from 'simple-dom';
 
 import { TestEnvironment, TestDynamicScope} from "glimmer-test-helpers/lib/environment";
-import { Template } from 'glimmer-runtime';
+import { Template, Simple } from 'glimmer-runtime';
 import { UpdatableReference } from 'glimmer-object-reference';
 import NodeDOMChanges from 'glimmer-node/lib/node-dom-helper';
 
-let HTMLSerializer = SimpleDOM.HTMLSerializer;
 let voidMap = SimpleDOM.voidMap;
 
-let serializer = new HTMLSerializer(voidMap);
+let serializer = new SimpleDOM.HTMLSerializer(voidMap);
 
 // const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 // const XLINK_NAMESPACE = 'http://www.w3.org/1999/xlink';
 // const XHTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
 
-let env: TestEnvironment, root: HTMLElement;
+let env: TestEnvironment, root: Simple.Element;
 let helper: NodeDOMChanges;
 
 function compile(template: string) {
   return env.compile(template);
 }
 
-function rootElement(): HTMLDivElement {
-  return env.getDOM().createElement('div', new SimpleDOM.Document().body) as HTMLDivElement;
+function rootElement(): Simple.Element {
+  return env.getAppendOperations().createElement('div');
 }
 
 function commonSetup() {
   helper = new NodeDOMChanges();
-  env = new TestEnvironment(helper); // TODO: Support SimpleDOM
+  env = new TestEnvironment(); // TODO: Support SimpleDOM
   root = rootElement();
 }
 
