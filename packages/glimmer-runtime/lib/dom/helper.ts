@@ -81,10 +81,10 @@ namespace DOM {
           throw new Error(`Cannot create a ${tag} inside of a <${context.tagName}>, because it's inside an SVG context`);
         }
 
-      return this.document.createElementNS(SVG_NAMESPACE as Namespace, tag);
-    }
+        return this.document.createElementNS(SVG_NAMESPACE as Namespace, tag);
+      }
 
-    return this.document.createElement(tag);
+      return this.document.createElement(tag);
     }
 
     createElementNS(namespace: Namespace, tag: string): Element {

@@ -182,5 +182,7 @@ import * as Simple from './lib/dom/interfaces';
 export { Simple };
 
 export { default as DOMChanges, DOMChanges as IDOMChanges, DOMTreeConstruction, isWhitespace, insertHTMLBefore } from './lib/dom/helper';
+import  * as Simple from './lib/dom/interfaces';
+export { Simple };
 export { ElementStack, ElementOperations } from './lib/builder';
 export { default as Bounds } from './lib/bounds';
