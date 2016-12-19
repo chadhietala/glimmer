@@ -1,6 +1,6 @@
 import { Scope, DynamicScope, Environment } from '../environment';
 import { ElementStack } from '../builder';
-import { Destroyable, Stack, LinkedList, ListSlice, LOGGER, Opaque, assert } from 'glimmer-util';
+import { Destroyable, Stack, LinkedList, ListSlice, Opaque, assert } from 'glimmer-util';
 import { PathReference, combineSlice } from 'glimmer-reference';
 import { InlineBlock, PartialBlock, CompiledBlock } from '../compiled/blocks';
 import { CompiledExpression } from '../compiled/expressions';
@@ -12,6 +12,8 @@ import { Component, ComponentManager } from '../component/interfaces';
 import { VMState, ListBlockOpcode, TryOpcode, BlockOpcode } from './update';
 import RenderResult from './render-result';
 import { CapturedFrame, FrameStack } from './frame';
+
+const { execute } = heimdall.registerMonitor('append-vm', 'execute');
 
 export interface PublicVM {
   env: Environment;
@@ -252,7 +254,8 @@ export default class VM implements PublicVM {
   }
 
   execute(opcodes: OpSeq, initialize?: (vm: VM) => void): RenderResult {
-    LOGGER.debug("[VM] Begin program execution");
+    let token = heimdall.start('execute');
+    heimdall.increment(execute);
 
     let { elementStack, frame, updatingOpcodeStack, env } = this;
 
@@ -267,14 +270,11 @@ export default class VM implements PublicVM {
 
     while (frame.hasOpcodes()) {
       if (opcode = frame.nextStatement()) {
-        LOGGER.debug(`[VM] OP ${opcode.type}`);
-        LOGGER.trace(opcode);
         opcode.evaluate(this);
       }
     }
 
-    LOGGER.debug("[VM] Completed program execution");
-
+    heimdall.stop(token);
     return new RenderResult(
       env,
       updatingOpcodeStack.pop(),

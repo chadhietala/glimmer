@@ -22,6 +22,22 @@ import { AttributeManager } from '../../dom/attribute-managers';
 import { ElementOperations } from '../../builder';
 import { Assert } from './vm';
 
+const {
+  text,
+  openPrimitiveElement,
+  pushRemoteElement,
+  popRemoteElement,
+  openComponentElement,
+  openDynamicPrimitiveElement
+} = heimdall.registerMonitor('dom-opcodes',
+'text',
+'openPrimitiveElement',
+'pushRemoteElement',
+'popRemoteElement',
+'openComponentElement',
+'openDynamicPrimitiveElement'
+);
+
 export class TextOpcode extends Opcode {
   public type = "text";
 
@@ -30,7 +46,10 @@ export class TextOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(text);
     vm.stack().appendText(this.text);
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -50,7 +69,10 @@ export class OpenPrimitiveElementOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(openPrimitiveElement);
     vm.stack().openElement(this.tag);
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -66,6 +88,8 @@ export class PushRemoteElementOpcode extends Opcode {
   public type = "push-remote-element";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(pushRemoteElement);
     let reference = vm.frame.getOperand<Simple.Element>();
     let cache = isConstReference(reference) ? undefined : new ReferenceCache(reference);
     let element = cache ? cache.peek() : reference.value();
@@ -75,6 +99,7 @@ export class PushRemoteElementOpcode extends Opcode {
     if (cache) {
       vm.updateWith(new Assert(cache));
     }
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -90,7 +115,10 @@ export class PopRemoteElementOpcode extends Opcode {
   public type = "pop-remote-element";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(popRemoteElement);
     vm.stack().popRemoteElement();
+    heimdall.stop(token);
   }
 }
 
@@ -102,7 +130,10 @@ export class OpenComponentElementOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(openComponentElement);
     vm.stack().openElement(this.tag, new ComponentElementOperations(vm.env));
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -118,8 +149,11 @@ export class OpenDynamicPrimitiveElementOpcode extends Opcode {
   public type = "open-dynamic-primitive-element";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(openDynamicPrimitiveElement);
     let tagName = vm.frame.getOperand<string>().value();
     vm.stack().openElement(tagName);
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {

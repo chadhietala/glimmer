@@ -1,7 +1,7 @@
 import { Scope, DynamicScope, Environment } from '../environment';
 import { DestroyableBounds, clear, move as moveBounds } from '../bounds';
 import { ElementStack, Tracker, UpdatableTracker } from '../builder';
-import { LOGGER, Opaque, Stack, LinkedList, Dict, dict } from 'glimmer-util';
+import { Opaque, Stack, LinkedList, Dict, dict } from 'glimmer-util';
 import {
   ConstReference,
   PathReference,
@@ -26,6 +26,8 @@ import { CapturedFrame } from './frame';
 
 import VM from './append';
 
+const { execute } = heimdall.registerMonitor('updating-vm', 'execute');
+
 export default class UpdatingVM {
   public env: Environment;
   public dom: DOMChanges;
@@ -39,6 +41,8 @@ export default class UpdatingVM {
   }
 
   execute(opcodes: UpdatingOpSeq, handler: ExceptionHandler) {
+    let token = heimdall.start('execute');
+    heimdall.increment(execute);
     let { frameStack } = this;
 
     this.try(opcodes, handler);
@@ -53,11 +57,10 @@ export default class UpdatingVM {
         continue;
       }
 
-      LOGGER.debug(`[VM] OP ${opcode.type}`);
-      LOGGER.trace(opcode);
-
       opcode.evaluate(this);
     }
+
+    heimdall.stop(token);
   }
 
   goto(op: UpdatingOpcode) {

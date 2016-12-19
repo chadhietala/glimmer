@@ -7,11 +7,29 @@ import { DynamicScope } from '../../environment';
 import Bounds from '../../bounds';
 import { CONSTANT_TAG, PathReference, ReferenceCache, combine, isConst, RevisionTag } from 'glimmer-reference';
 import { FIXME } from 'glimmer-util';
+const {
+  putDynamicComponentDefiniton,
+  putComponentDefinition,
+  openComponent,
+  updateComponent,
+  didCreateElement,
+  shadowAttributes,
+  didRenderLayout
+} = heimdall.registerMonitor('component-opcodes',
+'putDynamicComponentDefiniton',
+'putComponentDefinitionOpcode',
+'openComponent',
+'updateComponent',
+'didCreateElement',
+'shadowAttributes',
+'didRenderLayout');
 
 export class PutDynamicComponentDefinitionOpcode extends Opcode {
   public type = "put-dynamic-component-definition";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(putDynamicComponentDefiniton);
     let reference = vm.frame.getOperand<ComponentDefinition<Component>>();
     let cache = isConst(reference) ? undefined : new ReferenceCache(reference);
     let definition = cache ? cache.peek() : reference.value();
@@ -21,6 +39,7 @@ export class PutDynamicComponentDefinitionOpcode extends Opcode {
     if (cache) {
       vm.updateWith(new Assert(cache));
     }
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -40,7 +59,10 @@ export class PutComponentDefinitionOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(putComponentDefinitionOpcode);
     vm.frame.setImmediate(this.definition);
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -63,6 +85,9 @@ export class OpenComponentOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(openComponent);
+
     let { args: rawArgs, shadow } = this;
 
     let definition = vm.frame.getImmediate<ComponentDefinition<Component>>();
@@ -85,6 +110,7 @@ export class OpenComponentOpcode extends Opcode {
     vm.invokeLayout(args, layout, callerScope, component, manager, shadow);
 
     vm.updateWith(new UpdateComponentOpcode(definition.name, component, manager, args, dynamicScope));
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -118,9 +144,12 @@ export class UpdateComponentOpcode extends UpdatingOpcode {
   }
 
   evaluate(vm: UpdatingVM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(updateComponent);
     let { component, manager, args, dynamicScope } = this;
 
     manager.update(component, args, dynamicScope);
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -136,10 +165,13 @@ export class DidCreateElementOpcode extends Opcode {
   public type = "did-create-element";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(didCreateElement);
     let manager = vm.frame.getManager();
     let component = vm.frame.getComponent();
 
     manager.didCreateElement(component, vm.stack().constructing, vm.stack().operations);
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -157,6 +189,8 @@ export class ShadowAttributesOpcode extends Opcode {
   public type = "shadow-attributes";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(shadowAttributes);
     let shadow = vm.frame.getShadow();
 
     if (!shadow) return;
@@ -166,6 +200,7 @@ export class ShadowAttributesOpcode extends Opcode {
     shadow.forEach(name => {
       vm.stack().setDynamicAttribute(name, named.get(name) as FIXME<PathReference<string>, 'setDynamicAttribute should take an Ref<Opaque> instead'>, false);
     });
+    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -181,6 +216,8 @@ export class DidRenderLayoutOpcode extends Opcode {
   public type = "did-render-layout";
 
   evaluate(vm: VM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(didRenderLayout);
     let manager = vm.frame.getManager();
     let component = vm.frame.getComponent();
     let bounds = vm.stack().popBlock();
@@ -190,6 +227,7 @@ export class DidRenderLayoutOpcode extends Opcode {
     vm.env.didCreate(component, manager);
 
     vm.updateWith(new DidUpdateLayoutOpcode(manager, component, bounds));
+    heimdall.stop(token);
   }
 }
 
@@ -206,11 +244,14 @@ export class DidUpdateLayoutOpcode extends UpdatingOpcode {
   }
 
   evaluate(vm: UpdatingVM) {
+    let token = heimdall.start(this.type);
+    heimdall.increment(didUpdateLayout);
     let { manager, component, bounds } = this;
 
     manager.didUpdateLayout(component, bounds);
 
     vm.env.didUpdate(component, manager);
+    heimdall.stop(token);
   }
 }
 
