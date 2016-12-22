@@ -28,14 +28,60 @@ const {
   pushRemoteElement,
   popRemoteElement,
   openComponentElement,
-  openDynamicPrimitiveElement
+  openDynamicPrimitiveElement,
+  flushElement,
+  closeElement,
+  popElement,
+  staticAttr,
+  modifier: __modifier,
+  updateModifier
 } = heimdall.registerMonitor('dom-opcodes',
 'text',
 'openPrimitiveElement',
 'pushRemoteElement',
 'popRemoteElement',
 'openComponentElement',
-'openDynamicPrimitiveElement'
+'openDynamicPrimitiveElement',
+'flushElement',
+'closeElement',
+'popElement',
+'staticAttr',
+'modifier',
+'updateModifier'
+);
+
+const {
+  classList
+} = heimdall.registerMonitor('dom-references',
+'classList'
+);
+
+const {
+  addStaticAttribute,
+  addStaticAttributeNS,
+  addDynamicAttribute,
+  addDynamicAttributeNS,
+  flushOperations
+} = heimdall.registerMonitor('element-operations',
+'addStaticAttribute',
+'addStaticAttributeNS',
+'addDynamicAttribute',
+'addDynamicAttributeNS',
+'flushOperations'
+);
+
+const {
+  addStaticAttribute: compAddStaticAttribute,
+  addStaticAttributeNS: compAddStaticAttributeNS,
+  addDynamicAttribute: compAddDynamicAttribute,
+  addDynamicAttributeNS: compAddDynamicAttributeNS,
+  flushOperations: compFlushOperations
+} = heimdall.registerMonitor('component-operations',
+'addStaticAttribute',
+'addStaticAttributeNS',
+'addDynamicAttribute',
+'addDynamicAttributeNS',
+'flushOperations'
 );
 
 export class TextOpcode extends Opcode {
@@ -46,10 +92,8 @@ export class TextOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(text);
     vm.stack().appendText(this.text);
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -69,10 +113,8 @@ export class OpenPrimitiveElementOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(openPrimitiveElement);
     vm.stack().openElement(this.tag);
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -88,7 +130,6 @@ export class PushRemoteElementOpcode extends Opcode {
   public type = "push-remote-element";
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(pushRemoteElement);
     let reference = vm.frame.getOperand<Simple.Element>();
     let cache = isConstReference(reference) ? undefined : new ReferenceCache(reference);
@@ -99,7 +140,6 @@ export class PushRemoteElementOpcode extends Opcode {
     if (cache) {
       vm.updateWith(new Assert(cache));
     }
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -115,10 +155,8 @@ export class PopRemoteElementOpcode extends Opcode {
   public type = "pop-remote-element";
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(popRemoteElement);
     vm.stack().popRemoteElement();
-    heimdall.stop(token);
   }
 }
 
@@ -130,10 +168,8 @@ export class OpenComponentElementOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(openComponentElement);
     vm.stack().openElement(this.tag, new ComponentElementOperations(vm.env));
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -149,11 +185,9 @@ export class OpenDynamicPrimitiveElementOpcode extends Opcode {
   public type = "open-dynamic-primitive-element";
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(openDynamicPrimitiveElement);
     let tagName = vm.frame.getOperand<string>().value();
     vm.stack().openElement(tagName);
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -201,6 +235,7 @@ class ClassListReference extends CachedReference<string> {
   }
 
   protected compute(): string {
+    heimdall.increment(classList);
     return toClassName(this.list);
   }
 }
@@ -224,6 +259,7 @@ export class SimpleElementOperations implements ElementOperations {
   }
 
   addStaticAttribute(element: Simple.Element, name: string, value: string) {
+    heimdall.increment(addStaticAttribute);
     if (name === 'class') {
       this.addClass(PrimitiveReference.create(value));
     } else {
@@ -232,10 +268,12 @@ export class SimpleElementOperations implements ElementOperations {
   }
 
   addStaticAttributeNS(element: Simple.Element, namespace: string, name: string, value: string) {
+    heimdall.increment(addStaticAttributeNS);
     this.env.getAppendOperations().setAttribute(element, name, value, namespace);
   }
 
   addDynamicAttribute(element: Simple.Element, name: string, reference: PathReference<string>, isTrusting: boolean) {
+    heimdall.increment(addDynamicAttribute);
     if (name === 'class') {
       this.addClass(reference);
     } else {
@@ -247,6 +285,7 @@ export class SimpleElementOperations implements ElementOperations {
   }
 
   addDynamicAttributeNS(element: Simple.Element, namespace: Simple.Namespace, name: string, reference: PathReference<string>, isTrusting: boolean) {
+    heimdall.increment(addDynamicAttributeNS);
     let attributeManager = this.env.attributeFor(element, name, isTrusting, namespace);
     let nsAttribute = new DynamicAttribute(element, attributeManager, name, reference, namespace);
 
@@ -254,6 +293,7 @@ export class SimpleElementOperations implements ElementOperations {
   }
 
   flush(element: Simple.Element, vm: VM) {
+    heimdall.increment(flushOperations);
     let { env } = vm;
     let { opcodes, classList } = this;
 
@@ -309,6 +349,7 @@ export class ComponentElementOperations implements ElementOperations {
   }
 
   addStaticAttribute(element: Simple.Element, name: string, value: string) {
+    heimdall.increment(compAddStaticAttribute);
     if (name === 'class') {
       this.addClass(PrimitiveReference.create(value));
     } else if (this.shouldAddAttribute(name)) {
@@ -317,12 +358,14 @@ export class ComponentElementOperations implements ElementOperations {
   }
 
   addStaticAttributeNS(element: Simple.Element, namespace: string, name: string, value: string) {
+    heimdall.increment(compAddStaticAttributeNS);
     if (this.shouldAddAttribute(name)) {
       this.addAttribute(name, new StaticAttribute(element, name, value, namespace));
     }
   }
 
   addDynamicAttribute(element: Simple.Element, name: string, reference: PathReference<string>, isTrusting: boolean) {
+    heimdall.increment(compAddDynamicAttribute);
     if (name === 'class') {
       this.addClass(reference);
     } else if (this.shouldAddAttribute(name)) {
@@ -334,6 +377,7 @@ export class ComponentElementOperations implements ElementOperations {
   }
 
   addDynamicAttributeNS(element: Simple.Element, namespace: Simple.Namespace, name: string, reference: PathReference<string>, isTrusting: boolean) {
+    heimdall.increment(compAddDynamicAttributeNS);
     if (this.shouldAddAttribute(name)) {
       let attributeManager = this.env.attributeFor(element, name, isTrusting, namespace);
       let nsAttribute = new DynamicAttribute(element, attributeManager, name, reference, namespace);
@@ -343,6 +387,7 @@ export class ComponentElementOperations implements ElementOperations {
   }
 
   flush(element: Simple.Element, vm: VM) {
+    heimdall.increment(compFlushOperations);
     let { env } = this;
     let { attributes, classList } = this;
 
@@ -396,6 +441,7 @@ export class FlushElementOpcode extends Opcode {
   public type = "flush-element";
 
   evaluate(vm: VM) {
+    heimdall.increment(flushElement);
     let stack = vm.stack();
 
     stack.operations.flush(stack.constructing, vm);
@@ -407,6 +453,7 @@ export class CloseElementOpcode extends Opcode {
   public type = "close-element";
 
   evaluate(vm: VM) {
+    heimdall.increment(closeElement);
     vm.stack().closeElement();
   }
 }
@@ -415,6 +462,7 @@ export class PopElementOpcode extends Opcode {
   public type = "pop-element";
 
   evaluate(vm: VM) {
+    heimdall.increment(popElement);
     vm.stack().popElement();
   }
 }
@@ -437,6 +485,7 @@ export class StaticAttrOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    heimdall.increment(staticAttr);
     let { name, value, namespace } = this;
     if (namespace) {
       vm.stack().setStaticAttributeNS(namespace, name, value);
@@ -473,6 +522,7 @@ export class ModifierOpcode extends Opcode {
   }
 
   evaluate(vm: VM) {
+    heimdall.increment(__modifier);
     let { manager } = this;
     let stack = vm.stack();
     let { constructing: element, updateOperations } = stack;
@@ -522,6 +572,7 @@ export class UpdateModifierOpcode extends UpdatingOpcode {
   }
 
   evaluate(vm: UpdatingVM) {
+    heimdall.increment(updateModifier);
     let { manager, modifier, tag, lastUpdated } = this;
 
     if (!tag.validate(lastUpdated)) {

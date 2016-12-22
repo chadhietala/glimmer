@@ -89,7 +89,6 @@ export abstract class AppendOpcode<T extends Insertion> extends Opcode {
   protected abstract updateWith(vm: VM, reference: Reference<Opaque>, cache: ReferenceCache<T>, bounds: Fragment, upsert: Upsert): UpdatingOpcode;
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(append);
     let reference = vm.frame.getOperand();
     let normalized = this.normalize(reference);
@@ -112,7 +111,6 @@ export abstract class AppendOpcode<T extends Insertion> extends Opcode {
     if (cache /* i.e. !isConst(reference) */) {
       vm.updateWith(this.updateWith(vm, reference, cache, bounds, upsert));
     }
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -133,7 +131,6 @@ export abstract class GuardedAppendOpcode<T extends Insertion> extends AppendOpc
   }
 
   evaluate(vm: VM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(append);
     if (this.deopted) {
       vm.pushEvalFrame(this.deopted);
@@ -148,7 +145,6 @@ export abstract class GuardedAppendOpcode<T extends Insertion> extends AppendOpc
         super.evaluate(vm);
       }
     }
-    heimdall.stop(token);
   }
 
   public deopt(env: Environment): OpSeq {
@@ -271,7 +267,6 @@ abstract class UpdateOpcode<T extends Insertion> extends UpdatingOpcode {
   protected abstract insert(dom: DOMTreeConstruction, cursor: Cursor, value: T): Upsert;
 
   evaluate(vm: UpdatingVM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(update);
     let value = this.cache.revalidate();
 
@@ -286,7 +281,6 @@ abstract class UpdateOpcode<T extends Insertion> extends UpdatingOpcode {
 
       bounds.update(upsert.bounds);
     }
-    heimdall.stop(token);
   }
 
   toJSON(): OpcodeJSON {
@@ -317,7 +311,6 @@ abstract class GuardedUpdateOpcode<T extends Insertion> extends UpdateOpcode<T> 
   }
 
   evaluate(vm: UpdatingVM) {
-    let token = heimdall.start(this.type);
     heimdall.increment(guardedUpdate);
     if (this.deopted) {
       vm.evaluateOpcode(this.deopted);
@@ -328,7 +321,6 @@ abstract class GuardedUpdateOpcode<T extends Insertion> extends UpdateOpcode<T> 
         super.evaluate(vm);
       }
     }
-    heimdall.stop(token);
   }
 
   private lazyDeopt(vm: UpdatingVM) {
